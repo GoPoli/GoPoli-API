@@ -9,6 +9,7 @@ import org.springframework.web.bind.annotation.*;
 import com.proyect.gopoli.model.Usuario;
 import com.proyect.gopoli.repository.UsuarioRepository;
 
+import org.springframework.http.ResponseEntity;
 @RestController
 @CrossOrigin(origins="*")
 public class AuthController {
