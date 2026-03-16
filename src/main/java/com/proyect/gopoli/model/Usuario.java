@@ -3,58 +3,109 @@ package com.proyect.gopoli.model;
 import jakarta.persistence.*;
 
 @Entity
-@Table(name="usuario")
+@Table(name = "usuario")
 public class Usuario {
 
- @Id
- @GeneratedValue(strategy = GenerationType.IDENTITY)
- private Integer idUsuario;
+    @Id
+    @GeneratedValue(strategy = GenerationType.IDENTITY)
+    @Column(name = "id_Usuario")
+    private Integer idUsuario;
 
- private String correo;
- private String contrasena;
- private String nombre;
- private String tel;
+    @Column(name = "correo")
+    private String correo;
 
- public Usuario(){}
+    @Column(name = "contrasena")
+    private String contrasena;
 
- public Integer getIdUsuario(){
-     return idUsuario;
- }
+    @Column(name = "nombre")
+    private String nombre;
 
- public void setIdUsuario(Integer idUsuario){
-     this.idUsuario = idUsuario;
- }
+    @Column(name = "tel")
+    private String tel;
 
- public String getCorreo(){
-     return correo;
- }
+    @Column(name = "id_carrera")
+    private Integer idCarrera;
 
- public void setCorreo(String correo){
-     this.correo = correo;
- }
+    @Column(name = "id_estado")
+    private Integer idEstado;
 
- public String getContrasena(){
-     return contrasena;
- }
+    @Column(name = "id_tipousuario")
+    private Integer idTipoUsuario;
 
- public void setContrasena(String contrasena){
-     this.contrasena = contrasena;
- }
+    @Column(name = "nota")
+    private Double nota;
 
- public String getNombre(){
-     return nombre;
- }
+    public Usuario(){}
 
- public void setNombre(String nombre){
-     this.nombre = nombre;
- }
+    public Integer getIdUsuario(){
+        return idUsuario;
+    }
 
- public String getTel(){
-     return tel;
- }
+    public void setIdUsuario(Integer idUsuario){
+        this.idUsuario = idUsuario;
+    }
 
- public void setTel(String tel){
-     this.tel = tel;
- }
+    public String getCorreo(){
+        return correo;
+    }
 
+    public void setCorreo(String correo){
+        this.correo = correo;
+    }
+
+    public String getContrasena(){
+        return contrasena;
+    }
+
+    public void setContrasena(String contrasena){
+        this.contrasena = contrasena;
+    }
+
+    public String getNombre(){
+        return nombre;
+    }
+
+    public void setNombre(String nombre){
+        this.nombre = nombre;
+    }
+
+    public String getTel(){
+        return tel;
+    }
+
+    public void setTel(String tel){
+        this.tel = tel;
+    }
+
+    public Integer getIdCarrera(){
+        return idCarrera;
+    }
+
+    public void setIdCarrera(Integer idCarrera){
+        this.idCarrera = idCarrera;
+    }
+
+    public Integer getIdEstado(){
+        return idEstado;
+    }
+
+    public void setIdEstado(Integer idEstado){
+        this.idEstado = idEstado;
+    }
+
+    public Integer getIdTipoUsuario(){
+        return idTipoUsuario;
+    }
+
+    public void setIdTipoUsuario(Integer idTipoUsuario){
+        this.idTipoUsuario = idTipoUsuario;
+    }
+
+    public Double getNota(){
+        return nota;
+    }
+
+    public void setNota(Double nota){
+        this.nota = nota;
+    }
 }
