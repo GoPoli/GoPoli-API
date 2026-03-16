@@ -6,7 +6,6 @@ import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.web.bind.annotation.*;
 
 import com.proyect.gopoli.model.Carrera;
-import com.proyect.gopoli.model.TipoUsuario;
 import com.proyect.gopoli.repository.CarreraRepository;
 import com.proyect.gopoli.repository.TipoUsuarioRepository;
 
@@ -25,11 +24,4 @@ public class CatalogoController {
     public List<Carrera> getCarreras(){
         return carreraRepo.findAll();
     }
-
-
-    @GetMapping("/tipo-usuario")
-    public List<TipoUsuario> getTiposUsuario(){
-        return tipoUsuarioRepo.findAll();
-    }
-
 }
