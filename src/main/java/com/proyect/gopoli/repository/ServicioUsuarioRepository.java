@@ -7,4 +7,5 @@ import java.util.List;
 
 public interface ServicioUsuarioRepository extends JpaRepository<ServicioUsuario, ServicioUsuarioId> {
     List<ServicioUsuario> findByIdServicio(Integer idServicio);
+    List<ServicioUsuario> findByIdUsuario(Integer idUsuario);
 }

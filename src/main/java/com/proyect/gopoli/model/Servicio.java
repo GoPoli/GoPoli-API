@@ -37,6 +37,9 @@ public class Servicio {
     @Column(name = "id_estadoservicio")
     private Integer idEstadoServicio;
 
+    @Column(name = "capacidad")
+    private Integer capacidad;
+
     public Servicio() {}
 
     public Integer getIdServicio() { 
@@ -99,5 +102,12 @@ public class Servicio {
     }
     public void setIdEstadoServicio(Integer idEstadoServicio) { 
         this.idEstadoServicio = idEstadoServicio; 
+    }
+
+    public Integer getCapacidad() { 
+        return capacidad; 
+    }
+    public void setCapacidad(Integer capacidad) { 
+        this.capacidad = capacidad; 
     }
 }
