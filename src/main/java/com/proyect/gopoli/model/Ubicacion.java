@@ -14,6 +14,13 @@ public class Ubicacion {
     @Column(name = "nombre_ubicacion")
     private String nombreUbicacion;
 
+    /** WGS84 — requerido para mapa y ruta en la app (actualiza filas en BD). */
+    @Column(name = "latitud")
+    private Double latitud;
+
+    @Column(name = "longitud")
+    private Double longitud;
+
     public Ubicacion() {}
 
     public Integer getIdUbicacion() { 
@@ -28,5 +35,21 @@ public class Ubicacion {
     }
     public void setNombreUbicacion(String nombreUbicacion) { 
         this.nombreUbicacion = nombreUbicacion; 
+    }
+
+    public Double getLatitud() {
+        return latitud;
+    }
+
+    public void setLatitud(Double latitud) {
+        this.latitud = latitud;
+    }
+
+    public Double getLongitud() {
+        return longitud;
+    }
+
+    public void setLongitud(Double longitud) {
+        this.longitud = longitud;
     }
 }

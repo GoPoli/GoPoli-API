@@ -1,5 +1,10 @@
 # Getting Started
 
+## GoPoli (mapas y ubicaciones)
+
+- **Clave de Google Maps:** guía en [`frontend/README_MAPS_ES.md`](frontend/README_MAPS_ES.md). Copias [`frontend/lib/config/google_maps_config.example.dart`](frontend/lib/config/google_maps_config.example.dart) a `google_maps_config.dart` (local, en `.gitignore`; Android lee la misma clave al compilar).
+- **Coordenadas en la tabla `ubicacion`:** al arrancar el backend, `UbicacionCoordenadasSeeder` sincroniza `latitud`/`longitud` para cada nombre de estación / salida Poli (ver `backend/scripts/seed_ubicaciones_metro_poli.sql` si prefieres SQL a mano).
+
 ### Reference Documentation
 For further reference, please consider the following sections:
 
