@@ -35,6 +35,10 @@ public class Usuario {
     @Column(name = "nota")
     private Double nota;
 
+    /** Base64 JPEG/PNG o URL; opcional. */
+    @Column(name = "foto_perfil", columnDefinition = "TEXT")
+    private String fotoPerfil;
+
     public Usuario(){}
 
     public Integer getIdUsuario(){
@@ -107,5 +111,13 @@ public class Usuario {
 
     public void setNota(Double nota){
         this.nota = nota;
+    }
+
+    public String getFotoPerfil() {
+        return fotoPerfil;
+    }
+
+    public void setFotoPerfil(String fotoPerfil) {
+        this.fotoPerfil = fotoPerfil;
     }
 }

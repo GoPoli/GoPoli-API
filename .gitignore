@@ -31,3 +31,8 @@ build/
 
 ### VS Code ###
 .vscode/
+
+### Secrets / Neon ###
+.env
+*.env.local
+*.dump

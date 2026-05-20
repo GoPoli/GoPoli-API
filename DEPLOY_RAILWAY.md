@@ -2,6 +2,10 @@
 
 ## 1) Backend + PostgreSQL
 
+**Opcion A — BD en Neon (recomendado para el equipo):** crea el proyecto en Neon y sigue [`DATABASE_NEON.md`](DATABASE_NEON.md). En Railway solo despliegas el backend con las mismas variables `SPRING_DATASOURCE_*` (URL con pooler y `?sslmode=require`).
+
+**Opcion B — PostgreSQL en Railway:**
+
 1. Sube repo a GitHub (rama actual).
 2. En Railway: **New Project** -> **Deploy from GitHub repo**.
 3. Crea un servicio PostgreSQL en el mismo proyecto.

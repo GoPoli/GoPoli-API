@@ -2,6 +2,7 @@
 
 ## GoPoli (mapas y ubicaciones)
 
+- **Base de datos compartida (Neon):** guía en [`DATABASE_NEON.md`](DATABASE_NEON.md). Variables `SPRING_DATASOURCE_*` y plantilla en [`backend/.env.example`](backend/.env.example).
 - **Clave de Google Maps:** guía en [`frontend/README_MAPS_ES.md`](frontend/README_MAPS_ES.md). Copias [`frontend/lib/config/google_maps_config.example.dart`](frontend/lib/config/google_maps_config.example.dart) a `google_maps_config.dart` (local, en `.gitignore`; Android lee la misma clave al compilar).
 - **Coordenadas en la tabla `ubicacion`:** al arrancar el backend, `UbicacionCoordenadasSeeder` sincroniza `latitud`/`longitud` para cada nombre de estación / salida Poli (ver `backend/scripts/seed_ubicaciones_metro_poli.sql` si prefieres SQL a mano).
 
