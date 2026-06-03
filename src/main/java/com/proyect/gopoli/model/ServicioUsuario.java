@@ -18,6 +18,10 @@ public class ServicioUsuario {
     @Column(name = "rol")
     private String rol;
 
+    /** Rol en el viaje: passenger | driver */
+    @Column(name = "rol_participacion")
+    private String rolParticipacion;
+
     public ServicioUsuario() {}
 
     public Integer getIdServicio() { 
@@ -39,5 +43,13 @@ public class ServicioUsuario {
     }
     public void setRol(String rol) { 
         this.rol = rol; 
+    }
+
+    public String getRolParticipacion() {
+        return rolParticipacion;
+    }
+
+    public void setRolParticipacion(String rolParticipacion) {
+        this.rolParticipacion = rolParticipacion;
     }
 }
