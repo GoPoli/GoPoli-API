@@ -3,7 +3,7 @@
 ## GoPoli (mapas y ubicaciones)
 
 - **Base de datos compartida (Neon):** guía en [`DATABASE_NEON.md`](DATABASE_NEON.md). Variables `SPRING_DATASOURCE_*` y plantilla en [`backend/.env.example`](backend/.env.example).
-- **Clave de Google Maps:** guía en [`frontend/README_MAPS_ES.md`](frontend/README_MAPS_ES.md). Copias [`frontend/lib/config/google_maps_config.example.dart`](frontend/lib/config/google_maps_config.example.dart) a `google_maps_config.dart` (local, en `.gitignore`; Android lee la misma clave al compilar).
+- **Mapa en la PWA:** OpenStreetMap (Leaflet) y rutas con OSRM. Variable del cliente: `NEXT_PUBLIC_API_URL` (ver [`web/.env.example`](web/.env.example) y [`web/README.md`](web/README.md)). No se usa clave de Google Maps en la web.
 - **Coordenadas en la tabla `ubicacion`:** al arrancar el backend, `UbicacionCoordenadasSeeder` sincroniza `latitud`/`longitud` para cada nombre de estación / salida Poli (ver `backend/scripts/seed_ubicaciones_metro_poli.sql` si prefieres SQL a mano).
 
 ### Reference Documentation
@@ -30,4 +30,3 @@ Due to Maven's design, elements are inherited from the parent POM to the project
 While most of the inheritance is fine, it also inherits unwanted elements like `<license>` and `<developers>` from the parent.
 To prevent this, the project POM contains empty overrides for these elements.
 If you manually switch to a different parent and actually want the inheritance, you need to remove those overrides.
-

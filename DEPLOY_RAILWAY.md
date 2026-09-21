@@ -27,18 +27,22 @@ Prueba:
 
 - `GET https://gopoli-backend.up.railway.app/ubicaciones`
 
-## 3) Frontend Flutter apuntando a Railway
+## 3) PWA Next.js apuntando a Railway
 
-No necesitas editar codigo. Usa `--dart-define`:
+La PWA vive en `web/` (host Node separado). Configura la URL publica del API:
 
-```bash
-flutter run --dart-define=API_URL=https://gopoli-backend.up.railway.app
+```env
+NEXT_PUBLIC_API_URL=https://gopoli-backend.up.railway.app
 ```
 
-Para build release:
+En local: `web/.env.local`. En el host de la PWA: variables de entorno del proveedor. Detalle: [`web/DEPLOYMENT.md`](web/DEPLOYMENT.md).
+
+Ejemplo de arranque local contra Railway:
 
 ```bash
-flutter build apk --release --dart-define=API_URL=https://gopoli-backend.up.railway.app
+cd web
+npm install
+npm run dev
 ```
 
 ## 4) Migrar datos de BD local a Railway (opcional)
@@ -58,6 +62,6 @@ pg_restore --no-owner --no-privileges -h <HOST> -p <PORT> -U <USER> -d <DB> gopo
 ## 5) Checklist final
 
 - Backend en Railway responde endpoints.
-- App movil inicia sesion usando `API_URL` de Railway.
+- La PWA inicia sesion usando `NEXT_PUBLIC_API_URL` hacia Railway.
 - CORS abierto para desarrollo (`@CrossOrigin("*")`) o restringido en produccion.
-- Claves secretas no subidas a git (`google_maps_config.dart` local + `.gitignore`).
+- Secretos de BD / JWT solo en el backend (no en el cliente).
