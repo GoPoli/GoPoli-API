@@ -6,6 +6,7 @@ import com.proyect.gopoli.model.Usuario;
 import com.proyect.gopoli.repository.MensajeRepository;
 import com.proyect.gopoli.repository.ServicioUsuarioRepository;
 import com.proyect.gopoli.repository.UsuarioRepository;
+import com.proyect.gopoli.security.JwtService;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.*;
@@ -28,12 +29,22 @@ public class MensajeController {
     ServicioUsuarioRepository servicioUsuarioRepo;
     @Autowired
     UsuarioRepository usuarioRepo;
+    @Autowired
+    JwtService jwtService;
 
     @GetMapping("/servicio/{idServicio}/mensajes")
     public ResponseEntity<?> listarMensajes(
+            @RequestHeader(value = "Authorization", required = false) String auth,
             @PathVariable Integer idServicio,
             @RequestParam Integer idUsuario) {
         try {
+            Integer actor = jwtService.parseUserId(auth);
+            if (actor == null) {
+                return ResponseEntity.status(401).body("Token inválido o ausente");
+            }
+            if (!actor.equals(idUsuario)) {
+                return ResponseEntity.status(403).body("No puedes leer mensajes de otra persona");
+            }
             if (!esMiembro(idServicio, idUsuario)) {
                 return ResponseEntity.status(403).body("Solo los miembros del grupo pueden ver los mensajes");
             }
@@ -44,18 +55,19 @@ public class MensajeController {
             }
             return ResponseEntity.ok(out);
         } catch (Exception e) {
-            return ResponseEntity.status(500).body("Error al listar mensajes: " + e.getMessage());
+            return ResponseEntity.status(500).body("Error al listar mensajes");
         }
     }
 
     @PostMapping("/servicio/{idServicio}/mensajes")
     public ResponseEntity<?> enviarMensaje(
+            @RequestHeader(value = "Authorization", required = false) String auth,
             @PathVariable Integer idServicio,
             @RequestBody Map<String, Object> body) {
         try {
-            Integer idUsuario = asInteger(body.get("idUsuario"));
+            Integer idUsuario = jwtService.parseUserId(auth);
             if (idUsuario == null) {
-                return ResponseEntity.status(400).body("idUsuario es obligatorio");
+                return ResponseEntity.status(401).body("Token inválido o ausente");
             }
             if (!esMiembro(idServicio, idUsuario)) {
                 return ResponseEntity.status(403).body("Solo los miembros del grupo pueden enviar mensajes");
@@ -80,7 +92,7 @@ public class MensajeController {
             Mensaje guardado = mensajeRepo.save(mensaje);
             return ResponseEntity.ok(enriquecer(guardado));
         } catch (Exception e) {
-            return ResponseEntity.status(500).body("Error al enviar mensaje: " + e.getMessage());
+            return ResponseEntity.status(500).body("Error al enviar mensaje");
         }
     }
 

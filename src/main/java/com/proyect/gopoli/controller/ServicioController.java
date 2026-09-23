@@ -7,7 +7,10 @@ import com.proyect.gopoli.model.ServicioUsuarioId;
 import com.proyect.gopoli.model.Usuario;
 import com.proyect.gopoli.repository.ServicioRepository;
 import com.proyect.gopoli.repository.ServicioUsuarioRepository;
+import com.proyect.gopoli.repository.UbicacionRepository;
 import com.proyect.gopoli.repository.UsuarioRepository;
+import com.proyect.gopoli.security.JwtService;
+import com.proyect.gopoli.util.ServicioPolicy;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.*;
@@ -27,15 +30,39 @@ public class ServicioController {
     ServicioUsuarioRepository servicioUsuarioRepo;
     @Autowired
     UsuarioRepository usuarioRepo;
+    @Autowired
+    JwtService jwtService;
+    @Autowired
+    UbicacionRepository ubicacionRepo;
+
+    private Integer actorId(String authorization) {
+        return jwtService.parseUserId(authorization);
+    }
+
+    private ResponseEntity<String> sinSesion() {
+        return ResponseEntity.status(401).body("Token inválido o ausente");
+    }
 
     @PostMapping("/servicio/crear")
-    public ResponseEntity<?> crearServicio(@RequestBody Servicio servicio) {
+    public ResponseEntity<?> crearServicio(
+            @RequestHeader(value = "Authorization", required = false) String auth,
+            @RequestBody Servicio servicio) {
         try {
-            if (servicio.getIdLugarSalida() == null) {
-                return ResponseEntity.status(400).body("El lugar de salida es obligatorio");
+            Integer actor = actorId(auth);
+            if (actor == null) {
+                return sinSesion();
             }
-            if (servicio.getIdLugarLlegada() == null) {
-                return ResponseEntity.status(400).body("El lugar de llegada es obligatorio");
+            servicio.setIdCreador(actor);
+            String errorCreacion = ServicioPolicy.errorCreacion(
+                    servicio.getIdLugarSalida(),
+                    servicio.getIdLugarLlegada(),
+                    servicio.getCapacidad());
+            if (errorCreacion != null) {
+                return ResponseEntity.status(400).body(errorCreacion);
+            }
+            if (!ubicacionRepo.existsById(servicio.getIdLugarSalida())
+                    || !ubicacionRepo.existsById(servicio.getIdLugarLlegada())) {
+                return ResponseEntity.status(400).body("La salida o el destino no existe");
             }
             if (servicio.getFecha() == null) {
                 return ResponseEntity.status(400).body("La fecha es obligatoria");
@@ -50,10 +77,6 @@ public class ServicioController {
                     && servicio.getHoraSalida().isBefore(java.time.LocalTime.now())) {
                 return ResponseEntity.status(400).body("La hora no puede ser en el pasado");
             }
-            if (servicio.getCapacidad() == null || servicio.getCapacidad() < 2 || servicio.getCapacidad() > 4) {
-                return ResponseEntity.status(400).body("La capacidad debe ser entre 2 y 4 personas");
-            }
-
             Integer idTipoServicio = servicio.getIdTipoServicio();
             if (idTipoServicio == null) {
                 idTipoServicio = GoPoliConstants.TIPO_SERVICIO_PASAJERO_GRUPO;
@@ -100,52 +123,68 @@ public class ServicioController {
             return ResponseEntity.ok(enriquecerServicio(guardado));
 
         } catch (Exception e) {
-            return ResponseEntity.status(500).body("Error al crear el servicio: " + e.getMessage());
+            return ResponseEntity.status(500).body("Error al crear el servicio");
         }
     }
 
     @PutMapping("/servicio/cancelar/{idServicio}")
-    public ResponseEntity<?> cancelarServicio(@PathVariable Integer idServicio) {
-        try {
-            return servicioRepo.findById(idServicio).map(servicio -> {
-                servicio.setIdEstadoServicio(GoPoliConstants.ESTADO_SERVICIO_CANCELADO);
-                servicioRepo.save(servicio);
-                return ResponseEntity.ok("Servicio cancelado");
-            }).orElse(ResponseEntity.status(404).body("Servicio no encontrado"));
-        } catch (Exception e) {
-            return ResponseEntity.status(500).body("Error al cancelar: " + e.getMessage());
-        }
+    public ResponseEntity<?> cancelarServicio(
+            @RequestHeader(value = "Authorization", required = false) String auth,
+            @PathVariable Integer idServicio) {
+        return cambiarEstado(auth, idServicio, GoPoliConstants.ESTADO_SERVICIO_CANCELADO, "Servicio cancelado", "Error al cancelar");
     }
 
     @PutMapping("/servicio/finalizar/{idServicio}")
-    public ResponseEntity<?> finalizarViaje(@PathVariable Integer idServicio) {
-        try {
-            return servicioRepo.findById(idServicio).map(servicio -> {
-                servicio.setIdEstadoServicio(GoPoliConstants.ESTADO_SERVICIO_FINALIZADO);
-                servicioRepo.save(servicio);
-                return ResponseEntity.ok("Viaje finalizado");
-            }).orElse(ResponseEntity.status(404).body("Servicio no encontrado"));
-        } catch (Exception e) {
-            return ResponseEntity.status(500).body("Error al finalizar: " + e.getMessage());
-        }
+    public ResponseEntity<?> finalizarViaje(
+            @RequestHeader(value = "Authorization", required = false) String auth,
+            @PathVariable Integer idServicio) {
+        return cambiarEstado(auth, idServicio, GoPoliConstants.ESTADO_SERVICIO_FINALIZADO, "Viaje finalizado", "Error al finalizar");
     }
 
     @PutMapping("/servicio/iniciar/{idServicio}")
-    public ResponseEntity<?> iniciarViaje(@PathVariable Integer idServicio) {
+    public ResponseEntity<?> iniciarViaje(
+            @RequestHeader(value = "Authorization", required = false) String auth,
+            @PathVariable Integer idServicio) {
+        return cambiarEstado(auth, idServicio, GoPoliConstants.ESTADO_SERVICIO_EN_CURSO, "Viaje iniciado", "Error al iniciar");
+    }
+
+    private ResponseEntity<?> cambiarEstado(
+            String auth, Integer idServicio, int estado, String ok, String error) {
         try {
+            Integer actor = actorId(auth);
+            if (actor == null) {
+                return sinSesion();
+            }
             return servicioRepo.findById(idServicio).map(servicio -> {
-                servicio.setIdEstadoServicio(GoPoliConstants.ESTADO_SERVICIO_EN_CURSO);
+                if (!actor.equals(servicio.getIdCreador())) {
+                    return ResponseEntity.status(403).body("Solo el creador puede cambiar el estado del viaje");
+                }
+                String errorTransicion = ServicioPolicy.errorTransicion(
+                        servicio.getIdEstadoServicio(), estado);
+                if (errorTransicion != null) {
+                    return ResponseEntity.status(409).body(errorTransicion);
+                }
+                servicio.setIdEstadoServicio(estado);
                 servicioRepo.save(servicio);
-                return ResponseEntity.ok("Viaje iniciado");
+                return ResponseEntity.ok(ok);
             }).orElse(ResponseEntity.status(404).body("Servicio no encontrado"));
         } catch (Exception e) {
-            return ResponseEntity.status(500).body("Error al iniciar: " + e.getMessage());
+            return ResponseEntity.status(500).body(error);
         }
     }
 
     @GetMapping("/servicio/{idServicio}/miembros")
-    public ResponseEntity<?> getMiembros(@PathVariable Integer idServicio) {
+    public ResponseEntity<?> getMiembros(
+            @RequestHeader(value = "Authorization", required = false) String auth,
+            @PathVariable Integer idServicio) {
         try {
+            Integer actor = actorId(auth);
+            if (actor == null) {
+                return sinSesion();
+            }
+            if (!servicioUsuarioRepo.existsById(new ServicioUsuarioId(idServicio, actor))) {
+                return ResponseEntity.status(403).body("Solo los miembros pueden consultar el grupo");
+            }
             List<ServicioUsuario> miembros = servicioUsuarioRepo.findByIdServicio(idServicio);
 
             List<Map<String, Object>> resultado = miembros.stream().map(m -> {
@@ -162,26 +201,39 @@ public class ServicioController {
 
             return ResponseEntity.ok(resultado);
         } catch (Exception e) {
-            return ResponseEntity.status(500).body("Error al traer miembros: " + e.getMessage());
+            return ResponseEntity.status(500).body("Error al traer miembros");
         }
     }
 
     @GetMapping("/servicios/activos")
-    public ResponseEntity<?> getServiciosActivos() {
+    public ResponseEntity<?> getServiciosActivos(
+            @RequestHeader(value = "Authorization", required = false) String auth) {
         try {
+            if (actorId(auth) == null) {
+                return sinSesion();
+            }
             List<Servicio> activos = servicioRepo.findByIdEstadoServicio(GoPoliConstants.ESTADO_SERVICIO_ACTIVO);
             List<Map<String, Object>> resultado = activos.stream().map(this::enriquecerServicio).toList();
             return ResponseEntity.ok(resultado);
         } catch (Exception e) {
-            return ResponseEntity.status(500).body("Error: " + e.getMessage());
+            return ResponseEntity.status(500).body("Error al listar servicios");
         }
     }
 
     @PostMapping("/servicio/unirse")
-    public ResponseEntity<?> unirse(@RequestBody Map<String, Integer> body) {
+    public ResponseEntity<?> unirse(
+            @RequestHeader(value = "Authorization", required = false) String auth,
+            @RequestBody Map<String, Integer> body) {
         try {
+            Integer actor = actorId(auth);
+            if (actor == null) {
+                return sinSesion();
+            }
             Integer idServicio = body.get("idServicio");
-            Integer idUsuario = body.get("idUsuario");
+            Integer idUsuario = actor;
+            if (idServicio == null) {
+                return ResponseEntity.status(400).body("El servicio es obligatorio");
+            }
 
             Servicio servicio = servicioRepo.findById(idServicio).orElse(null);
             if (servicio == null) {
@@ -225,16 +277,29 @@ public class ServicioController {
             return ResponseEntity.ok("Te uniste al grupo exitosamente");
 
         } catch (Exception e) {
-            return ResponseEntity.status(500).body("Error al unirse: " + e.getMessage());
+            return ResponseEntity.status(500).body("Error al unirse");
         }
     }
 
     @DeleteMapping("/servicio/salir/{idServicio}/{idUsuario}")
-    public ResponseEntity<?> salirGrupo(@PathVariable Integer idServicio, @PathVariable Integer idUsuario) {
+    public ResponseEntity<?> salirGrupo(
+            @RequestHeader(value = "Authorization", required = false) String auth,
+            @PathVariable Integer idServicio,
+            @PathVariable Integer idUsuario) {
         try {
+            Integer actor = actorId(auth);
+            if (actor == null) {
+                return sinSesion();
+            }
+            if (!actor.equals(idUsuario)) {
+                return ResponseEntity.status(403).body("No puedes salir en nombre de otra persona");
+            }
             Servicio servicio = servicioRepo.findById(idServicio).orElse(null);
             if (servicio == null) {
                 return ResponseEntity.status(404).body("Servicio no encontrado");
+            }
+            if (servicio.getIdCreador().equals(actor)) {
+                return ResponseEntity.status(400).body("El creador no puede salir. Cancela el viaje.");
             }
             if (servicio.getIdEstadoServicio() != GoPoliConstants.ESTADO_SERVICIO_ACTIVO) {
                 return ResponseEntity.status(400).body("Solo puedes salir de grupos en planificación");
@@ -247,12 +312,29 @@ public class ServicioController {
             servicioUsuarioRepo.deleteById(id);
             return ResponseEntity.ok("Saliste del grupo");
         } catch (Exception e) {
-            return ResponseEntity.status(500).body("Error al salir: " + e.getMessage());
+            return ResponseEntity.status(500).body("Error al salir");
         }
     }
 
+    private ResponseEntity<String> exigirDueno(String auth, Integer idUsuario) {
+        Integer actor = actorId(auth);
+        if (actor == null) {
+            return sinSesion();
+        }
+        if (!actor.equals(idUsuario)) {
+            return ResponseEntity.status(403).body("No puedes consultar los viajes de otra persona");
+        }
+        return null;
+    }
+
     @GetMapping("/servicio/usuario/activo/{idUsuario}")
-    public ResponseEntity<?> getServicioActivoUsuario(@PathVariable Integer idUsuario) {
+    public ResponseEntity<?> getServicioActivoUsuario(
+            @RequestHeader(value = "Authorization", required = false) String auth,
+            @PathVariable Integer idUsuario) {
+        ResponseEntity<String> acceso = exigirDueno(auth, idUsuario);
+        if (acceso != null) {
+            return acceso;
+        }
         try {
             List<Servicio> activos = servicioRepo.findByIdCreadorAndIdEstadoServicio(
                     idUsuario, GoPoliConstants.ESTADO_SERVICIO_ACTIVO);
@@ -261,12 +343,18 @@ public class ServicioController {
             }
             return ResponseEntity.ok(enriquecerServicio(activos.get(0)));
         } catch (Exception e) {
-            return ResponseEntity.status(500).body("Error: " + e.getMessage());
+            return ResponseEntity.status(500).body("Error al consultar el servicio activo");
         }
     }
 
     @GetMapping("/servicio/usuario/miembro/{idUsuario}")
-    public ResponseEntity<?> getServicioComoMiembro(@PathVariable Integer idUsuario) {
+    public ResponseEntity<?> getServicioComoMiembro(
+            @RequestHeader(value = "Authorization", required = false) String auth,
+            @PathVariable Integer idUsuario) {
+        ResponseEntity<String> acceso = exigirDueno(auth, idUsuario);
+        if (acceso != null) {
+            return acceso;
+        }
         try {
             List<ServicioUsuario> grupos = servicioUsuarioRepo.findByIdUsuario(idUsuario);
             for (ServicioUsuario su : grupos) {
@@ -277,12 +365,18 @@ public class ServicioController {
             }
             return ResponseEntity.status(404).body("Sin grupo activo");
         } catch (Exception e) {
-            return ResponseEntity.status(500).body("Error: " + e.getMessage());
+            return ResponseEntity.status(500).body("Error al consultar el grupo");
         }
     }
 
     @GetMapping("/servicio/usuario/encurso/{idUsuario}")
-    public ResponseEntity<?> getServicioEnCurso(@PathVariable Integer idUsuario) {
+    public ResponseEntity<?> getServicioEnCurso(
+            @RequestHeader(value = "Authorization", required = false) String auth,
+            @PathVariable Integer idUsuario) {
+        ResponseEntity<String> acceso = exigirDueno(auth, idUsuario);
+        if (acceso != null) {
+            return acceso;
+        }
         try {
             List<Servicio> encurso = servicioRepo.findByIdCreadorAndIdEstadoServicio(
                     idUsuario, GoPoliConstants.ESTADO_SERVICIO_EN_CURSO);
@@ -299,13 +393,22 @@ public class ServicioController {
             }
             return ResponseEntity.status(404).body("Sin viaje en curso");
         } catch (Exception e) {
-            return ResponseEntity.status(500).body("Error: " + e.getMessage());
+            return ResponseEntity.status(500).body("Error al consultar el viaje en curso");
         }
     }
 
     @GetMapping("/servicio/{idServicio}")
-    public ResponseEntity<?> getServicio(@PathVariable Integer idServicio) {
+    public ResponseEntity<?> getServicio(
+            @RequestHeader(value = "Authorization", required = false) String auth,
+            @PathVariable Integer idServicio) {
         try {
+            Integer actor = actorId(auth);
+            if (actor == null) {
+                return sinSesion();
+            }
+            if (!servicioUsuarioRepo.existsById(new ServicioUsuarioId(idServicio, actor))) {
+                return ResponseEntity.status(403).body("Solo los miembros pueden consultar el viaje");
+            }
             return servicioRepo.findById(idServicio)
                     .map(s -> ResponseEntity.ok(enriquecerServicio(s)))
                     .orElse(ResponseEntity.status(404).build());

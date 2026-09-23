@@ -6,6 +6,7 @@ import com.proyect.gopoli.model.Ubicacion;
 import com.proyect.gopoli.repository.RutaHabitualRepository;
 import com.proyect.gopoli.repository.UbicacionRepository;
 import com.proyect.gopoli.repository.UsuarioRepository;
+import com.proyect.gopoli.security.JwtService;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.*;
@@ -27,9 +28,28 @@ public class AgendaController {
     UbicacionRepository ubicacionRepo;
     @Autowired
     UsuarioRepository usuarioRepo;
+    @Autowired
+    JwtService jwtService;
+
+    private ResponseEntity<String> exigirDueno(String auth, Integer idUsuario) {
+        Integer actor = jwtService.parseUserId(auth);
+        if (actor == null) {
+            return ResponseEntity.status(401).body("Token inválido o ausente");
+        }
+        if (idUsuario != null && !actor.equals(idUsuario)) {
+            return ResponseEntity.status(403).body("No puedes consultar la agenda de otra persona");
+        }
+        return null;
+    }
 
     @GetMapping("/agenda/rutas/usuario/{idUsuario}")
-    public ResponseEntity<?> listarPorUsuario(@PathVariable Integer idUsuario) {
+    public ResponseEntity<?> listarPorUsuario(
+            @RequestHeader(value = "Authorization", required = false) String auth,
+            @PathVariable Integer idUsuario) {
+        ResponseEntity<String> acceso = exigirDueno(auth, idUsuario);
+        if (acceso != null) {
+            return acceso;
+        }
         try {
             if (usuarioRepo.findById(idUsuario).isEmpty()) {
                 return ResponseEntity.status(404).body("Usuario no encontrado");
@@ -40,13 +60,20 @@ public class AgendaController {
                     .collect(Collectors.toList());
             return ResponseEntity.ok(lista);
         } catch (Exception e) {
-            return ResponseEntity.status(500).body("Error al listar rutas: " + e.getMessage());
+            return ResponseEntity.status(500).body("Error al listar rutas");
         }
     }
 
     @PostMapping("/agenda/rutas")
-    public ResponseEntity<?> crear(@RequestBody RutaHabitual ruta) {
+    public ResponseEntity<?> crear(
+            @RequestHeader(value = "Authorization", required = false) String auth,
+            @RequestBody RutaHabitual ruta) {
         try {
+            Integer actor = jwtService.parseUserId(auth);
+            if (actor == null) {
+                return ResponseEntity.status(401).body("Token inválido o ausente");
+            }
+            ruta.setIdUsuario(actor);
             String error = validar(ruta, true);
             if (error != null) {
                 return ResponseEntity.status(400).body(error);
@@ -61,20 +88,26 @@ public class AgendaController {
             RutaHabitual guardada = rutaRepo.save(ruta);
             return ResponseEntity.ok(enriquecer(guardada));
         } catch (Exception e) {
-            return ResponseEntity.status(500).body("Error al guardar la ruta: " + e.getMessage());
+            return ResponseEntity.status(500).body("Error al guardar la ruta");
         }
     }
 
     @PutMapping("/agenda/rutas/{idRuta}")
-    public ResponseEntity<?> actualizar(@PathVariable Integer idRuta, @RequestBody RutaHabitual body) {
+    public ResponseEntity<?> actualizar(
+            @RequestHeader(value = "Authorization", required = false) String auth,
+            @PathVariable Integer idRuta,
+            @RequestBody RutaHabitual body) {
         try {
+            Integer actor = jwtService.parseUserId(auth);
+            if (actor == null) {
+                return ResponseEntity.status(401).body("Token inválido o ausente");
+            }
             Optional<RutaHabitual> opt = rutaRepo.findById(idRuta);
             if (opt.isEmpty()) {
                 return ResponseEntity.status(404).body("Ruta no encontrada");
             }
             RutaHabitual existente = opt.get();
-            if (body.getIdUsuario() != null
-                    && !body.getIdUsuario().equals(existente.getIdUsuario())) {
+            if (!actor.equals(existente.getIdUsuario())) {
                 return ResponseEntity.status(403).body("No puedes editar esta ruta");
             }
 
@@ -102,27 +135,33 @@ public class AgendaController {
             RutaHabitual guardada = rutaRepo.save(existente);
             return ResponseEntity.ok(enriquecer(guardada));
         } catch (Exception e) {
-            return ResponseEntity.status(500).body("Error al actualizar la ruta: " + e.getMessage());
+            return ResponseEntity.status(500).body("Error al actualizar la ruta");
         }
     }
 
     @DeleteMapping("/agenda/rutas/{idRuta}")
     public ResponseEntity<?> eliminar(
+            @RequestHeader(value = "Authorization", required = false) String auth,
             @PathVariable Integer idRuta,
             @RequestParam(required = false) Integer idUsuario) {
         try {
+            Integer actor = jwtService.parseUserId(auth);
+            if (actor == null) {
+                return ResponseEntity.status(401).body("Token inválido o ausente");
+            }
             Optional<RutaHabitual> opt = rutaRepo.findById(idRuta);
             if (opt.isEmpty()) {
                 return ResponseEntity.status(404).body("Ruta no encontrada");
             }
             RutaHabitual ruta = opt.get();
-            if (idUsuario != null && !idUsuario.equals(ruta.getIdUsuario())) {
+            if (!actor.equals(ruta.getIdUsuario())
+                    || (idUsuario != null && !idUsuario.equals(ruta.getIdUsuario()))) {
                 return ResponseEntity.status(403).body("No puedes eliminar esta ruta");
             }
             rutaRepo.delete(ruta);
             return ResponseEntity.ok("Ruta eliminada");
         } catch (Exception e) {
-            return ResponseEntity.status(500).body("Error al eliminar: " + e.getMessage());
+            return ResponseEntity.status(500).body("Error al eliminar");
         }
     }
 

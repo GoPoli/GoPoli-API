@@ -19,12 +19,14 @@ import com.proyect.gopoli.model.Ubicacion;
 import com.proyect.gopoli.model.Usuario;
 import com.proyect.gopoli.model.UsuarioEstado;
 import com.proyect.gopoli.model.Vehiculo;
+import com.proyect.gopoli.repository.CarreraRepository;
 import com.proyect.gopoli.repository.ServicioRepository;
 import com.proyect.gopoli.repository.ServicioUsuarioRepository;
 import com.proyect.gopoli.repository.UbicacionRepository;
 import com.proyect.gopoli.repository.UsuarioRepository;
 import com.proyect.gopoli.repository.VehiculoRepository;
 import com.proyect.gopoli.security.JwtService;
+import com.proyect.gopoli.util.PerfilPolicy;
 import com.proyect.gopoli.util.VehicleValidator;
 
 @RestController
@@ -49,6 +51,9 @@ public class UsuarioController {
 
     @Autowired
     private UbicacionRepository ubicacionRepo;
+
+    @Autowired
+    private CarreraRepository carreraRepo;
 
     private Optional<Usuario> usuarioAutenticado(String authorization) {
         Integer id = jwtService.parseUserId(authorization);
@@ -96,20 +101,44 @@ public class UsuarioController {
         String nombre = body.get("nombre");
         String tel = body.get("tel");
         String correo = body.get("correo");
+        String idCarreraRaw = body.get("idCarrera");
 
-        if (nombre != null && !nombre.isBlank()) {
+        if (nombre != null) {
+            String error = PerfilPolicy.errorNombre(nombre);
+            if (error != null) {
+                return ResponseEntity.badRequest().body(error);
+            }
             usuario.setNombre(nombre.trim());
         }
         if (tel != null) {
+            String error = PerfilPolicy.errorTelefono(tel.trim());
+            if (error != null) {
+                return ResponseEntity.badRequest().body(error);
+            }
             usuario.setTel(tel.trim());
         }
-        if (correo != null && !correo.isBlank()) {
-            String nuevoCorreo = correo.trim();
-            Optional<Usuario> otro = repo.findByCorreo(nuevoCorreo);
+        if (correo != null) {
+            String error = PerfilPolicy.errorCorreo(correo);
+            if (error != null) {
+                return ResponseEntity.badRequest().body(error);
+            }
+            String nuevoCorreo = PerfilPolicy.normalizarCorreo(correo);
+            Optional<Usuario> otro = repo.findByCorreoIgnoreCase(nuevoCorreo);
             if (otro.isPresent() && !otro.get().getIdUsuario().equals(usuario.getIdUsuario())) {
                 return ResponseEntity.status(409).body("El correo ya está en uso");
             }
             usuario.setCorreo(nuevoCorreo);
+        }
+        if (idCarreraRaw != null) {
+            try {
+                Integer idCarrera = Integer.valueOf(idCarreraRaw);
+                if (!carreraRepo.existsById(idCarrera)) {
+                    return ResponseEntity.badRequest().body("La carrera seleccionada no existe");
+                }
+                usuario.setIdCarrera(idCarrera);
+            } catch (NumberFormatException ex) {
+                return ResponseEntity.badRequest().body("La carrera seleccionada no es válida");
+            }
         }
 
         return ResponseEntity.ok(dtoConVehiculo(repo.save(usuario)));
