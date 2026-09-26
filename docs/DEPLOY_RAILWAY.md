@@ -18,6 +18,8 @@ En ambos casos necesitas tres valores: `SPRING_DATASOURCE_URL`, `SPRING_DATASOUR
 > [!IMPORTANT]
 > La URL debe estar en formato JDBC (`jdbc:postgresql://HOST:PUERTO/BASE`). Con Neon agrega `?sslmode=require` y usa el host con **pooler**.
 
+La base debe tener el esquema de GoPoli antes de desplegar: la API lo valida al arrancar y no crea tablas. Aplica `init/01_schema.sql` y `init/02_catalogs.sql` de [GoPoli-DB](https://github.com/GoPoli/GoPoli-DB/blob/main/docs/DATABASE_NEON.md#3-crear-el-esquema-en-neon) con `psql`.
+
 ---
 
 ## 2. Servicio de la API
@@ -44,8 +46,8 @@ En ambos casos necesitas tres valores: `SPRING_DATASOURCE_URL`, `SPRING_DATASOUR
 | `SPRING_DATASOURCE_USERNAME` | Usuario de la base de datos |
 | `SPRING_DATASOURCE_PASSWORD` | Contraseña de la base de datos |
 | `GOPOLI_JWT_SECRET` | Secreto de al menos 32 caracteres (`openssl rand -base64 48`) |
-| `SPRING_JPA_SHOW_SQL` | `false` en producción |
-| `SPRING_JPA_FORMAT_SQL` | `false` en producción |
+| `CORS_ALLOWED_ORIGINS` | URL pública de la PWA, por ejemplo `https://gopoli-web.up.railway.app` |
+| `SPRING_JPA_HIBERNATE_DDL_AUTO` | `validate` |
 
 Railway inyecta `PORT` automáticamente y la API lo respeta (`server.port=${PORT:8080}`).
 
@@ -56,22 +58,23 @@ Railway inyecta `PORT` automáticamente y la API lo respeta (`server.port=${PORT
 Cuando el servicio quede en estado **Healthy**, copia la URL pública (por ejemplo `https://gopoli-api.up.railway.app`) y prueba:
 
 ```bash
-curl https://gopoli-api.up.railway.app/ubicaciones
+curl https://gopoli-api.up.railway.app/health
+curl https://gopoli-api.up.railway.app/locations
 ```
 
 Luego apunta la PWA a esa URL con `NEXT_PUBLIC_API_URL` (ver [GoPoli-Web](https://github.com/GoPoli/GoPoli-Web#variables-de-entorno)).
 
 ---
 
-## 5. Migrar datos locales
+## 5. Copiar datos locales
 
-Para llevar una base local a Railway o Neon, usa el procedimiento de `pg_dump` / `pg_restore` documentado en [GoPoli-DB](https://github.com/GoPoli/GoPoli-DB/blob/main/docs/DATABASE_NEON.md#3-migrar-una-base-local-a-neon).
+Para llevar una base local a Railway o Neon, usa el procedimiento de `pg_dump` / `pg_restore` documentado en [GoPoli-DB](https://github.com/GoPoli/GoPoli-DB/blob/main/docs/DATABASE_NEON.md#4-copiar-una-base-local-a-neon).
 
 ---
 
 ## 6. Checklist final
 
-- [ ] La API responde `GET /ubicaciones` y `GET /carreras`.
+- [ ] La API responde `GET /health` con `"database":"UP"` y `GET /locations` con las ubicaciones.
 - [ ] `GOPOLI_JWT_SECRET` es propio del entorno y no el valor de desarrollo.
-- [ ] La PWA inicia sesión contra la URL pública de la API.
+- [ ] La PWA inicia sesión contra la URL pública de la API y `CORS_ALLOWED_ORIGINS` contiene su dominio.
 - [ ] Los secretos de base de datos y JWT solo existen en el servicio de la API, nunca en el cliente.
