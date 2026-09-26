@@ -12,7 +12,7 @@
 	<artifactId>GoPoli</artifactId>
 	<version>0.0.1-SNAPSHOT</version>
 	<name>GoPoli</name>
-	<description>Proyecto GoPoli realizado mediante Flutter y Spring Boot</description>
+	<description>API REST de GoPoli, viajes compartidos entre estudiantes</description>
 	<url/>
 	<licenses>
 		<license/>
