@@ -34,7 +34,7 @@ La base debe tener el esquema de GoPoli antes de desplegar: la API lo valida al 
 
 1. En Railway: **New** → **Docker Image**.
 2. Imagen: `ghcr.io/gopoli/gopoli-api:latest`.
-3. Si el paquete es privado, configura las credenciales del registro con un token de GitHub con permiso `read:packages`.
+3. La imagen es pública: no hace falta configurar credenciales del registro.
 
 ---
 
