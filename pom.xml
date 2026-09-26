@@ -8,10 +8,10 @@
 		<version>4.0.3</version>
 		<relativePath/> <!-- lookup parent from repository -->
 	</parent>
-	<groupId>com.Proyect</groupId>
-	<artifactId>GoPoli</artifactId>
+	<groupId>com.gopoli</groupId>
+	<artifactId>gopoli-api</artifactId>
 	<version>0.0.1-SNAPSHOT</version>
-	<name>GoPoli</name>
+	<name>GoPoli API</name>
 	<description>API REST de GoPoli, viajes compartidos entre estudiantes</description>
 	<url/>
 	<licenses>
