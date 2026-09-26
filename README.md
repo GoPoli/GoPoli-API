@@ -268,7 +268,8 @@ La suite cubre `JwtService`, `PasswordService`, `GoPoliConstants`, `ProfilePolic
 | `maven.yml` | Push y PR a `main` | Compila y ejecuta las pruebas con Maven |
 | `codeql.yml` | Push, PR y semanal | Análisis estático de seguridad (Java y Actions) |
 | `dependency-review.yml` | PR a `main` | Bloquea dependencias con vulnerabilidades conocidas |
-| `packaging.yml` | Push a `main`, tags `v*.*.*`, manual | Construye y publica la imagen en GHCR con SBOM y provenance y, desde `main`, despliega a producción con el workflow `deploy.yml` de [GoPoli/.github](https://github.com/GoPoli/.github/blob/main/docs/CI_CD.md#despliegue-en-el-servidor) |
+| `packaging.yml` | Push a `main`, tags `v*.*.*`, manual | Construye y publica la imagen en GHCR con SBOM y provenance |
+| `deploy.yml` | Publicación exitosa en `main`, manual | Despliega la app completa (DB, API y PWA) con el workflow reutilizable de [GoPoli/.github](https://github.com/GoPoli/.github/blob/main/docs/CI_CD.md#despliegue-en-el-servidor) |
 | `stale.yml` | Diario | Marca y cierra issues y PRs inactivos |
 
 Dependabot revisa semanalmente Maven, la imagen base de Docker y las versiones de las Actions.
